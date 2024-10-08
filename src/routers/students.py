@@ -41,9 +41,7 @@ async def update_student(student_id: int, student: StudentUpdate) -> Any:
     for s in students:
         if s.student_id == student_id:
             curr_student = Student(**s.model_dump())
-
             updated_student = curr_student.model_copy(update=student.model_dump(exclude_unset=True))
-
             students[students.index(s)] = updated_student
 
             return updated_student
