@@ -40,11 +40,13 @@ async def get_student_by_id(student_id: int) -> Student:
 async def update_student(student_id: int, student: StudentUpdate) -> Any:
     for s in students:
         if s.student_id == student_id:
-            updated_student_data = student.model_dump(exclude_unset=True)
+            curr_student = Student(**s.model_dump())
 
-            for key, value in updated_student_data.items():
-                setattr(s, key, value)
-            return s
+            updated_student = curr_student.model_copy(update=student.model_dump(exclude_unset=True))
+
+            students[students.index(s)] = updated_student
+
+            return updated_student
 
     raise HTTPException(status_code=404, detail="Student not found")
 
