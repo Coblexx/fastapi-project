@@ -53,8 +53,8 @@ async def update_student(student_id: int, student: StudentUpdate) -> Any:
 
 @router.delete("/{student_id}", status_code=200)
 async def delete_student(student_id: int) -> dict[str, str]:
-    for i, s in enumerate(students):
+    for s in students:
         if s.student_id == student_id:
-            students.pop(i)
+            students.pop(students.index(s))
 
     return {"message": "Student deleted"}
