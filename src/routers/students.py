@@ -1,58 +1,52 @@
-from typing import Any
+from typing import Sequence
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
-from src.models import Student, StudentBase, StudentBaseOut, StudentUpdate
+from src import crud, schemas
+from src.core.db import Base, engine, get_db
+
+Base.metadata.create_all(bind=engine)
 
 router = APIRouter()
 
-students: list[Student] = [
-    Student(student_id=1, name="John Doe", age=20, email="john@example.com"),
-    Student(student_id=2, name="Jane Doe", age=20, email="jane@example.com"),
-    Student(student_id=3, name="Bob Ross", age=21, email="bob@example.com"),
-]
 
+@router.get("/", response_model=Sequence[schemas.Student])
+async def get_students(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> Sequence[schemas.Student]:
+    students = crud.get_students(db, skip=skip, limit=limit)
 
-@router.get("/")
-async def get_students() -> list[Student]:
     return students
 
 
-@router.post("/", response_model=StudentBaseOut, status_code=201)
-async def create_student(new_student: StudentBase) -> Any:
-    new_id = len(students) + 1
-    new_student = Student(student_id=new_id, **new_student.model_dump())  # is there another way?
-
-    students.append(new_student)
-    return new_student
+@router.post("/", response_model=schemas.StudentBaseOut, status_code=201)
+async def create_student(new_student: schemas.StudentBase, db: Session = Depends(get_db)) -> schemas.StudentBaseOut:
+    student = crud.create_student(db, schemas.StudentBase(**new_student.model_dump()))
+    return student
 
 
-@router.get("/{student_id}")
-async def get_student_by_id(student_id: int) -> Student:
-    for s in students:
-        if s.student_id == student_id:
-            return s
+@router.get("/{student_id}", response_model=schemas.Student)
+async def get_student_by_id(student_id: int, db: Session = Depends(get_db)) -> schemas.Student:
+    student = crud.get_student_by_id(db, student_id)
 
-    raise HTTPException(status_code=404, detail="Student not found")
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return student
 
 
-@router.put("/{student_id}", response_model=StudentBaseOut, status_code=200)
-async def update_student(student_id: int, student: StudentUpdate) -> Any:
-    for s in students:
-        if s.student_id == student_id:
-            curr_student = Student(**s.model_dump())
-            updated_student = curr_student.model_copy(update=student.model_dump(exclude_unset=True))
-            students[students.index(s)] = updated_student
+@router.put("/{student_id}", response_model=schemas.StudentBaseOut, status_code=200)
+async def update_student(
+    student_id: int, update_student_data: schemas.StudentUpdate, db: Session = Depends(get_db)
+) -> schemas.Student | None:
 
-            return updated_student
+    updated_student = crud.update_student(db, student_id, update_student_data)
+
+    if updated_student:
+        return updated_student
 
     raise HTTPException(status_code=404, detail="Student not found")
 
 
-@router.delete("/{student_id}", status_code=200)
-async def delete_student(student_id: int) -> dict[str, str]:
-    for s in students:
-        if s.student_id == student_id:
-            students.pop(students.index(s))
-
-    return {"message": "Student deleted"}
+@router.delete("/{student_id}", status_code=204)
+async def delete_student(student_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
+    crud.delete_student(db, student_id)

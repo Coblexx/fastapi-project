@@ -1,22 +1,13 @@
-from pydantic import BaseModel
+from sqlalchemy import Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from src.core.db import Base
 
 
-class StudentBase(BaseModel):
-    name: str
-    age: int
-    email: str | None = None
+class Student(Base):  # type: ignore
+    __tablename__ = "students"
 
-
-class Student(StudentBase):
-    student_id: int
-
-
-class StudentBaseOut(BaseModel):
-    name: str
-    email: str | None = None
-
-
-class StudentUpdate(BaseModel):
-    name: str | None = None
-    age: int | None = None
-    email: str | None = None
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String)
+    age: Mapped[int] = mapped_column(Integer)
+    email: Mapped[str] = mapped_column(String, unique=True)
