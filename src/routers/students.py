@@ -4,9 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from src import crud, schemas
-from src.core.db import Base, engine, get_db
-
-Base.metadata.create_all(bind=engine)
+from src.core.db import get_db
 
 router = APIRouter()
 
@@ -14,7 +12,6 @@ router = APIRouter()
 @router.get("/", response_model=Sequence[schemas.Student])
 async def get_students(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)) -> Sequence[schemas.Student]:
     students = crud.get_students(db, skip=skip, limit=limit)
-
     return students
 
 
@@ -48,5 +45,5 @@ async def update_student(
 
 
 @router.delete("/{student_id}", status_code=204)
-async def delete_student(student_id: int, db: Session = Depends(get_db)) -> dict[str, str]:
+async def delete_student(student_id: int, db: Session = Depends(get_db)) -> None:
     crud.delete_student(db, student_id)

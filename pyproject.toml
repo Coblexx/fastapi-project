@@ -77,7 +77,6 @@ max-complexity = 18
 select = ["B", "C", "E", "F", "W", "T4", "B9"]
 
 [tool.mypy]
-mypy_path = "src"
 python_version = "3.12"
 plugins = ["pydantic.mypy"]
 strict = true

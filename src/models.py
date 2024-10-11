@@ -10,4 +10,5 @@ class Student(Base):  # type: ignore
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String)
     age: Mapped[int] = mapped_column(Integer)
-    email: Mapped[str] = mapped_column(String, unique=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=True, default=None)
+    major: Mapped[str] = mapped_column(String, nullable=True, default=None)
