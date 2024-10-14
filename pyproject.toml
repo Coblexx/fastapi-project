@@ -16,6 +16,7 @@ psycopg2-binary = "^2.9.9"
 isort = "^5.13.2"
 flake8 = "^7.1.1"
 alembic = "^1.13.3"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
@@ -78,7 +79,8 @@ select = ["B", "C", "E", "F", "W", "T4", "B9"]
 
 [tool.mypy]
 python_version = "3.12"
-plugins = ["pydantic.mypy"]
+plugins = ["sqlalchemy.ext.mypy.plugin", "pydantic.mypy"]
 strict = true
 show_error_codes = true
 enable_incomplete_feature = ["NewGenericSyntax"]
+exclude = ["alembic"]
