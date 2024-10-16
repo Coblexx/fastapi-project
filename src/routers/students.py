@@ -19,12 +19,13 @@ async def common_params(student_id: int, db: Session = Depends(get_db)) -> tuple
 CommonDeps = Tuple[Session, int]
 
 
-@router.get("/", response_model=Sequence[StudentSchema])
-async def get_students_list(db: Session = Depends(get_db), limit: int = 100, skip: int = 0) -> Sequence[StudentModel]:
+@router.get("/", response_model=Sequence[StudentSchema], status_code=200)
+async def fetch_students(db: Session = Depends(get_db), limit: int = 100, skip: int = 0) -> Sequence[StudentModel]:
     try:
         students = get_students(db, skip=skip, limit=limit)
-        if not students:
-            raise HTTPException(status_code=404, detail="No students found")
+
+        if students is None:
+            raise HTTPException(status_code=404, detail="No students found!")
 
         return students
 
@@ -75,7 +76,7 @@ async def update_existing_student(
         raise HTTPException(status_code=404, detail=f"An error occured while updating student: {e}")
 
 
-@router.delete("/{student_id}", status_code=204)
+@router.delete("/{student_id}", status_code=204, responses={204: {"description": "Student deleted"}})
 async def delete_student_by_id(commons: CommonDeps = Depends(common_params)) -> None:
     try:
         db, student_id = commons
