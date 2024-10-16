@@ -1,4 +1,4 @@
-from typing import Sequence, Annotated, Tuple
+from typing import Sequence, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -82,4 +82,4 @@ async def delete_student_by_id(commons: CommonDeps = Depends(common_params)) -> 
         delete_student(db, student_id)
 
     except Exception:
-        raise HTTPException(status_code=404, detail=f"An error occured while deleting student!")
+        raise HTTPException(status_code=404, detail="An error occured while deleting student!")
