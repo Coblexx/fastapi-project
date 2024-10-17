@@ -1,58 +1,86 @@
-from typing import Any
+from typing import Sequence, Tuple
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
-from src.models import Student, StudentBase, StudentBaseOut, StudentUpdate
+from src.core.db import get_db
+from src.crud import create_student, delete_student, get_student_by_id, get_students, update_student
+from src.models import Student as StudentModel
+from src.schemas import Student as StudentSchema
+from src.schemas import StudentBase, StudentBaseOut, StudentUpdate
 
 router = APIRouter()
 
-students: list[Student] = [
-    Student(student_id=1, name="John Doe", age=20, email="john@example.com"),
-    Student(student_id=2, name="Jane Doe", age=20, email="jane@example.com"),
-    Student(student_id=3, name="Bob Ross", age=21, email="bob@example.com"),
-]
+
+async def common_params(student_id: int, db: Session = Depends(get_db)) -> tuple[Session, int]:
+    return db, student_id
 
 
-@router.get("/")
-async def get_students() -> list[Student]:
-    return students
+CommonDeps = Tuple[Session, int]
+
+
+@router.get("/", response_model=Sequence[StudentSchema], status_code=200)
+async def fetch_students(db: Session = Depends(get_db), limit: int = 100, skip: int = 0) -> Sequence[StudentModel]:
+    try:
+        students = get_students(db, skip=skip, limit=limit)
+
+        if students is None:
+            raise HTTPException(status_code=404, detail="No students found!")
+
+        return students
+
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"An error occurred while fetching students: {e}")
 
 
 @router.post("/", response_model=StudentBaseOut, status_code=201)
-async def create_student(new_student: StudentBase) -> Any:
-    new_id = len(students) + 1
-    new_student = Student(student_id=new_id, **new_student.model_dump())  # is there another way?
+async def create_new_student(new_student: StudentBase, db: Session = Depends(get_db)) -> StudentModel | None:
+    try:
+        student = create_student(db, StudentBase(**new_student.model_dump()))
+        if not student:
+            raise HTTPException(status_code=400, detail="Student could not have been created!")
+        return student
 
-    students.append(new_student)
-    return new_student
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"An error occurred while creating student: {e}")
 
 
-@router.get("/{student_id}")
-async def get_student_by_id(student_id: int) -> Student:
-    for s in students:
-        if s.student_id == student_id:
-            return s
+@router.get("/{student_id}", response_model=StudentSchema)
+async def get_existing_student_by_id(commons: CommonDeps = Depends(common_params)) -> StudentModel | None:
+    try:
+        db, student_id = commons
+        student = get_student_by_id(db, student_id)
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
 
-    raise HTTPException(status_code=404, detail="Student not found")
+        return student
+
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"An error occured while fetching student data: {e}")
 
 
 @router.put("/{student_id}", response_model=StudentBaseOut, status_code=200)
-async def update_student(student_id: int, student: StudentUpdate) -> Any:
-    for s in students:
-        if s.student_id == student_id:
-            curr_student = Student(**s.model_dump())
-            updated_student = curr_student.model_copy(update=student.model_dump(exclude_unset=True))
-            students[students.index(s)] = updated_student
+async def update_existing_student(
+    update_student_data: StudentUpdate, commons: CommonDeps = Depends(common_params)
+) -> StudentModel | None:
+    try:
+        db, student_id = commons
+        updated_student = update_student(db, student_id, update_student_data)
 
-            return updated_student
+        if not updated_student:
+            raise HTTPException(status_code=404, detail="Student could not have been updated!")
 
-    raise HTTPException(status_code=404, detail="Student not found")
+        return updated_student
+
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"An error occured while updating student: {e}")
 
 
-@router.delete("/{student_id}", status_code=200)
-async def delete_student(student_id: int) -> dict[str, str]:
-    for s in students:
-        if s.student_id == student_id:
-            students.pop(students.index(s))
+@router.delete("/{student_id}", status_code=204, responses={204: {"description": "Student deleted"}})
+async def delete_student_by_id(commons: CommonDeps = Depends(common_params)) -> None:
+    try:
+        db, student_id = commons
+        delete_student(db, student_id)
 
-    return {"message": "Student deleted"}
+    except Exception:
+        raise HTTPException(status_code=404, detail="An error occured while deleting student!")
