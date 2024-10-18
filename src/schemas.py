@@ -1,3 +1,5 @@
+from enum import Enum
+
 from pydantic import BaseModel
 
 
@@ -25,3 +27,14 @@ class StudentUpdate(BaseModel):
     age: int | None = None
     email: str | None = None
     major: str | None = None
+
+
+class ErrorStatus(str, Enum):
+    NOT_FOUND = "not_found"
+    CONFLICT = "conflict"
+    INTERNAL_SERVER_ERROR = "internal_server_error"
+
+
+class Error(BaseModel):
+    detail: str
+    status: ErrorStatus

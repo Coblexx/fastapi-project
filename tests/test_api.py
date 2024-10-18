@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from src.core.db import Base, get_db
 from src.main import app
 from src.models import Student as StudentModel
+from src.schemas import StudentBase as StudentSchema
 
 client = TestClient(app)
 
@@ -34,15 +35,24 @@ def override_get_db() -> Generator[Session, None, None]:
 app.dependency_overrides[get_db] = override_get_db
 
 
+@pytest.fixture
+def mock_student_model() -> StudentModel:
+    return StudentModel(name="John Doe", age=21, email="john@example.com", major="Compsci")
+
+
+@pytest.fixture
+def mock_student_schema() -> StudentSchema:
+    return StudentSchema(name="Jane Doe", age=21, email="jane@example.com", major="Compsci")
+
+
 @pytest.fixture(autouse=True)
-def setup_and_teardown() -> Generator[Any, Any, Any]:
+def setup_and_teardown(mock_student_model: StudentModel) -> Generator[Any, Any, Any]:
     Base.metadata.create_all(bind=engine)
 
-    mocked_student = StudentModel(name="John Doe", age=21, email="john@example.com", major="Compsci")
     db = TestingSessionLocal()
-    db.add(mocked_student)
+    db.add(mock_student_model)
     db.commit()
-    db.refresh(mocked_student)
+    db.refresh(mock_student_model)
 
     yield
     Base.metadata.drop_all(bind=engine)
@@ -62,29 +72,23 @@ def test_read_students() -> None:
     ]
 
 
-def test_create_student() -> None:
-    mock_student = {"name": "Jane Doe", "age": 22, "email": "jane@example.com", "major": "Compsci"}
-
+def test_create_student(mock_student_schema: StudentSchema) -> None:
     response = client.post(
         "/students/",
-        json=mock_student,
+        json={**mock_student_schema.model_dump(), "age": 22},
     )
     assert response.status_code == 201
     assert response.json() == {"name": "Jane Doe", "email": "jane@example.com", "major": "Compsci"}
 
 
-def test_conflict_create_student() -> None:
-    mock_student_conflict_email = {"name": "Jane Doe", "age": 22, "email": "john@example.com", "major": "Compsci"}
-
+def test_conflict_create_student(mock_student_schema: StudentSchema) -> None:
     invalid_email_response = client.post(
         "/students/",
-        json=mock_student_conflict_email,
+        json={**mock_student_schema.model_dump(), "email": "john@example.com"},
     )
 
-    assert invalid_email_response.status_code == 400
-    assert invalid_email_response.json() == {
-        "detail": "An error occurred while creating student: 400: Student could not have been created!"
-    }
+    assert invalid_email_response.status_code == 409
+    assert invalid_email_response.json() == {"detail": "Student with this email already exists"}
 
 
 def test_read_student_by_id() -> None:
@@ -96,21 +100,34 @@ def test_read_student_by_id() -> None:
 def test_invalid_read_student_by_id() -> None:
     response = client.get("/students/2")
     assert response.status_code == 404
-    assert response.json() == {"detail": "An error occured while fetching student data: 404: Student not found"}
+    assert response.json() == {"detail": "Student not found"}
 
 
-def test_update_student() -> None:
-    mock_update = {"name": "Jane Doe", "age": 22, "email": "jane@example.com", "major": "Compsci"}
-
+def test_update_student(mock_student_schema: StudentSchema) -> None:
     response = client.put(
         "/students/1",
-        json=mock_update,
+        json={**mock_student_schema.model_dump(), "name": "John Doe"},
     )
 
     assert response.status_code == 200
-    assert response.json() == {"name": "Jane Doe", "email": "jane@example.com", "major": "Compsci"}
+    assert response.json() == {"name": "John Doe", "email": "jane@example.com", "major": "Compsci"}
+
+
+def test_update_invalid_student(mock_student_schema: StudentSchema) -> None:
+    response = client.put(
+        "/students/2",
+        json={**mock_student_schema.model_dump()},
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Student not found"}
 
 
 def test_delete_student() -> None:
     response = client.delete("/students/1")
+    assert response.status_code == 204
+
+
+def test_delete_invalid_student() -> None:
+    response = client.delete("/students/2")
     assert response.status_code == 204
