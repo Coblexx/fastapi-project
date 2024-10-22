@@ -64,7 +64,7 @@ def test_read_root() -> None:
     assert response.json() == {"message": "Hello World"}
 
 
-def test_read_students(mock_student_schema) -> None:
+def test_read_students(mock_student_schema: StudentSchema) -> None:
     response = client.get("/students/")
     assert response.status_code == 200
     assert response.json() == [
