@@ -10,7 +10,11 @@ python = "^3.12"
 fastapi = "^0.115.0"
 uvicorn = "^0.31.0"
 pydantic = "^2.9.2"
-mypy = "^1.11.2"
+sqlalchemy = "^2.0.35"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.3"
+httpx = "^0.27.2"
+result = "^0.17.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
@@ -18,7 +22,9 @@ flake8 = "*"
 flake8-pyproject = "*"
 pre-commit = "*"
 pytest = "*"
+pytest-cov = "*"
 pytest-asyncio = "*"
+python-dotenv = "*"
 requests = "*"
 isort = "*"
 mypy = "*"
@@ -70,11 +76,13 @@ max-line-length = 119
 max-complexity = 18
 # select errors and warnings to enable which are off by default
 select = ["B", "C", "E", "F", "W", "T4", "B9"]
+# ignore alembic
+per-file-ignores = "alembic/*:F401"
 
 [tool.mypy]
-mypy_path = "src"
 python_version = "3.12"
-plugins = ["pydantic.mypy"]
+plugins = ["sqlalchemy.ext.mypy.plugin", "pydantic.mypy"]
 strict = true
 show_error_codes = true
 enable_incomplete_feature = ["NewGenericSyntax"]
+exclude = ["alembic", "__init__.py"]

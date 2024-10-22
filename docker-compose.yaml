@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: students_db
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_DB=students
+    ports:
+      - '5432:5432'
+    volumes:
+      - students_data:/var/lib/postgresql/data
+
+volumes:
+  students_data:
