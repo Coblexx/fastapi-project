@@ -40,7 +40,16 @@ async def get_student_list(db: Session = Depends(get_db), limit: int = 100, skip
             raise HTTPException(status_code=get_status_code(result.status), detail=result.detail)
 
 
-@router.post("/", response_model=StudentBaseOut, status_code=201)
+@router.post(
+    "/",
+    response_model=StudentBaseOut,
+    status_code=201,
+    responses={
+        201: {"description": "Student created"},
+        409: {"description": "Student with this email already exists"},
+        500: {"description": "Internal server error"},
+    },
+)
 async def create_new_student(new_student: StudentBase, db: Session = Depends(get_db)) -> StudentModel | None:
     match create_student(db, StudentBase(**new_student.model_dump())):
         case Ok(result):
@@ -49,7 +58,17 @@ async def create_new_student(new_student: StudentBase, db: Session = Depends(get
             raise HTTPException(status_code=get_status_code(result.status), detail=result.detail)
 
 
-@router.get("/{student_id}", response_model=StudentSchema, dependencies=[Depends(deps_student_exits)])
+@router.get(
+    "/{student_id}",
+    response_model=StudentSchema,
+    status_code=200,
+    dependencies=[Depends(deps_student_exits)],
+    responses={
+        200: {"description": "Student found"},
+        404: {"description": "Student not found"},
+        500: {"description": "Internal server error"},
+    },
+)
 async def get_existing_student_by_id(commons: CommonDeps = Depends(common_params)) -> StudentModel | None:
     db, student_id = commons
 
@@ -67,6 +86,7 @@ async def get_existing_student_by_id(commons: CommonDeps = Depends(common_params
     responses={
         200: {"description": "Student updated"},
         404: {"description": "Student not found"},
+        409: {"description": "Student with this email already exists"},
         500: {"description": "Internal server error"},
     },
     dependencies=[Depends(deps_student_exits)],
@@ -83,7 +103,14 @@ async def update_existing_student(
             raise HTTPException(status_code=get_status_code(result.status), detail=result.detail)
 
 
-@router.delete("/{student_id}", status_code=204, responses={204: {"description": "Student deleted"}})
+@router.delete(
+    "/{student_id}",
+    status_code=204,
+    responses={
+        204: {"description": "Student deleted"},
+        500: {"description": "Internal server error"},
+    },
+)
 async def delete_student_by_id(commons: CommonDeps = Depends(common_params)) -> None:
     try:
         db, student_id = commons
