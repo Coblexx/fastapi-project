@@ -42,7 +42,7 @@ def mock_student_model() -> StudentModel:
 
 @pytest.fixture
 def mock_student_schema() -> StudentSchema:
-    return StudentSchema(name="Jane Doe", age=21, email="jane@example.com", major="Compsci")
+    return StudentSchema(name="John Doe", age=21, email="john@example.com", major="Compsci")
 
 
 @pytest.fixture(autouse=True)
@@ -64,21 +64,21 @@ def test_read_root() -> None:
     assert response.json() == {"message": "Hello World"}
 
 
-def test_read_students() -> None:
+def test_read_students(mock_student_schema) -> None:
     response = client.get("/students/")
     assert response.status_code == 200
     assert response.json() == [
-        {"id": 1, "name": "John Doe", "age": 21, "email": "john@example.com", "major": "Compsci"}
+        {**mock_student_schema.model_dump(), "id": 1},
     ]
 
 
 def test_create_student(mock_student_schema: StudentSchema) -> None:
     response = client.post(
         "/students/",
-        json={**mock_student_schema.model_dump(), "age": 22},
+        json={**mock_student_schema.model_dump(), "email": "jane@example.com"},
     )
     assert response.status_code == 201
-    assert response.json() == {"name": "Jane Doe", "email": "jane@example.com", "major": "Compsci"}
+    assert response.json() == {"name": "John Doe", "email": "jane@example.com", "major": "Compsci"}
 
 
 def test_conflict_create_student(mock_student_schema: StudentSchema) -> None:
@@ -110,7 +110,7 @@ def test_update_student(mock_student_schema: StudentSchema) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {"name": "John Doe", "email": "jane@example.com", "major": "Compsci"}
+    assert response.json() == {"name": "John Doe", "email": "john@example.com", "major": "Compsci"}
 
 
 def test_update_invalid_student(mock_student_schema: StudentSchema) -> None:
