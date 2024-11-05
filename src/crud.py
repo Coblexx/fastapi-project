@@ -3,7 +3,7 @@ from typing import Sequence
 from result import Err, Ok, Result
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import exists, select, update, delete
+from sqlalchemy.sql.expression import delete, exists, select, update
 
 from src.models import Student as StudentModel
 from src.schemas import Error, ErrorStatus, StudentBase, StudentUpdate
@@ -88,11 +88,11 @@ def update_student(db: Session, student_id: int, student_update: StudentUpdate) 
         return Err(Error(status=ErrorStatus.INTERNAL_SERVER_ERROR, detail="Internal server error"))
 
 
-def delete_student(db: Session, student_id: int) -> Result[StudentModel | None, Error]:
+def delete_student(db: Session, student_id: int) -> Result[None, Error]:
     try:
         db.execute(delete(StudentModel).where(StudentModel.id == student_id))
         db.flush()
-        return
+        return Ok(None)
 
     except SQLAlchemyError:
         return Err(Error(status=ErrorStatus.INTERNAL_SERVER_ERROR, detail="Database error"))
