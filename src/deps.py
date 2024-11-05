@@ -15,4 +15,4 @@ def deps_student_exits(student_id: int, db: Session = Depends(get_db)) -> None:
             detail=result.unwrap_err().detail,
         )
 
-    return None
+    return

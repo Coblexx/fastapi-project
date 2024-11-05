@@ -62,14 +62,13 @@ async def create_new_student(new_student: StudentBase, db: Session = Depends(get
     "/{student_id}",
     response_model=StudentSchema,
     status_code=200,
-    dependencies=[Depends(deps_student_exits)],
     responses={
         200: {"description": "Student found"},
         404: {"description": "Student not found"},
         500: {"description": "Internal server error"},
     },
 )
-async def get_existing_student_by_id(commons: CommonDeps = Depends(common_params)) -> StudentModel | None:
+async def get_existing_student_by_id(commons: CommonDeps = Depends(common_params)) -> StudentModel:
     db, student_id = commons
 
     match get_student_by_id(db, student_id):
@@ -93,7 +92,7 @@ async def get_existing_student_by_id(commons: CommonDeps = Depends(common_params
 )
 async def update_existing_student(
     update_student_data: StudentUpdate, commons: CommonDeps = Depends(common_params)
-) -> StudentModel | None:
+) -> StudentModel:
     db, student_id = commons
 
     match update_student(db, student_id, update_student_data):
@@ -108,13 +107,16 @@ async def update_existing_student(
     status_code=204,
     responses={
         204: {"description": "Student deleted"},
+        404: {"description": "Student not found"},
         500: {"description": "Internal server error"},
     },
+    dependencies=[Depends(deps_student_exits)],
 )
 async def delete_student_by_id(commons: CommonDeps = Depends(common_params)) -> None:
-    try:
-        db, student_id = commons
-        delete_student(db, student_id)
+    db, student_id = commons
 
-    except Exception:
-        raise HTTPException(status_code=500, detail="Internal server error")
+    match delete_student(db, student_id):
+        case Ok(_):
+            return
+        case Err(result):
+            raise HTTPException(status_code=get_status_code(result.status), detail=result.detail)

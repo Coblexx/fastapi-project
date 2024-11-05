@@ -36,9 +36,11 @@ def get_students(db: Session, skip: int = 0, limit: int = 100) -> Result[Sequenc
         return Err(Error(status=ErrorStatus.INTERNAL_SERVER_ERROR, detail="Internal server error"))
 
 
-def get_student_by_id(db: Session, student_id: int) -> Result[StudentModel | None, Error]:
+def get_student_by_id(db: Session, student_id: int) -> Result[StudentModel, Error]:
     try:
         db_student = db.scalar(select(StudentModel).where(StudentModel.id == student_id))
+        if not db_student:
+            return Err(Error(status=ErrorStatus.NOT_FOUND, detail="Student not found"))
         return Ok(db_student)
 
     except SQLAlchemyError:
@@ -48,7 +50,7 @@ def get_student_by_id(db: Session, student_id: int) -> Result[StudentModel | Non
         return Err(Error(status=ErrorStatus.INTERNAL_SERVER_ERROR, detail="Internal server error"))
 
 
-def create_student(db: Session, student_create: StudentBase) -> Result[StudentModel | None, Error]:
+def create_student(db: Session, student_create: StudentBase) -> Result[StudentModel, Error]:
     try:
         db_student = StudentModel(**student_create.model_dump())
         db.add(db_student)
@@ -65,7 +67,7 @@ def create_student(db: Session, student_create: StudentBase) -> Result[StudentMo
         return Err(Error(status=ErrorStatus.INTERNAL_SERVER_ERROR, detail="Internal server error"))
 
 
-def update_student(db: Session, student_id: int, student_update: StudentUpdate) -> Result[StudentModel | None, Error]:
+def update_student(db: Session, student_id: int, student_update: StudentUpdate) -> Result[StudentModel, Error]:
     try:
         db_student = db.execute(
             update(StudentModel)

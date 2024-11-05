@@ -9,3 +9,5 @@ def get_status_code(status: ErrorStatus) -> int:
             return 409
         case ErrorStatus.INTERNAL_SERVER_ERROR:
             return 500
+        case _:
+            return 400

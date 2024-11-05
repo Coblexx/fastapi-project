@@ -130,4 +130,5 @@ def test_delete_student() -> None:
 
 def test_delete_invalid_student() -> None:
     response = client.delete("/students/2")
-    assert response.status_code == 204
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Student not found"}

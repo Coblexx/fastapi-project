@@ -1,7 +1,8 @@
-from os import getenv
+from pydantic_settings import BaseSettings
 
-from dotenv import load_dotenv
 
-load_dotenv()
+class Settings(BaseSettings):
+    DB_URL: str
 
-DB_URL = str(getenv("DB_URL"))
+
+DB_URL = Settings().DB_URL
