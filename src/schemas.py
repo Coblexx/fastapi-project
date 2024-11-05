@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class StudentBase(BaseModel):
@@ -13,7 +13,7 @@ class StudentBase(BaseModel):
 class Student(StudentBase):
     id: int
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StudentBaseOut(BaseModel):
